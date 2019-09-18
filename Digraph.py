@@ -138,7 +138,7 @@ class DepthFirstOrder():
         for w in G.adj[v]:
             if not self.marked[w]:
                 self._dfs(G, w)
-        self.post.appendleft(v)
+        self._post.appendleft(v)
         self.reverse_post.append(v)
 
     @property
@@ -199,3 +199,25 @@ class KosarajuSCC():
     @property
     def count(self):
         return self._count
+
+
+class Hamiltonian():
+    ''' Tests for Hamiltonian Path by taking the topological order and checking
+    to see if edges exist for each consecutive pair 
+    '''
+
+    def __init__(self, G):
+        self.path = True
+        topo = Topological(G)
+        if topo.is_DAG():
+            order = topo.order()
+            for idx, v in enumerate(order):
+                if (idx == len(order) - 1):
+                    continue
+                if order[idx+1] not in G.adj(v):
+                    self.path = False
+        else:
+            self.path = False
+
+    def exist(self):
+        return self.path
