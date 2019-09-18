@@ -148,3 +148,16 @@ class DijkstraSP():
                 self.dist_to[w] = self.dist_to[v] + edge.weight
                 self.edge_to[w] = edge
                 self.pq.insert_task(w, self.dist_to[w])
+
+    def has_path_to(self, v):
+        return self.dist_to[v] < float('inf')
+
+    def path_to(self, v):
+        if not self.has_path_to(v):
+            return None
+        path = []
+        e = self.edge_to[v]
+        while e != None:
+            path.append(e)
+            e = self.edge_to[e.from_v]
+        return path
