@@ -1,3 +1,5 @@
+import heapq
+import itertools
 ''' Python3 implementation of weighted graph algos'''
 
 
@@ -77,3 +79,72 @@ class EdgeWeightedDigraph():
             for edge in self.adj[v]:
                 edges.append(edge)
         return edges
+
+
+class MinPriorityQueue():
+    REMOVED = '<removed-task>'
+
+    def __init__(self):
+        self.heap = []
+        self.entry_finder = {}
+        self.counter = itertools.count()
+
+    def remove_task(self, task):
+        '''Mark existing task as removed; raise keyError if not found'''
+        entry = self.entry_finder.pop(task)
+        entry[-1] = self.REMOVED
+
+    def insert_task(self, task, priority=0):
+        ''' add a new task or update priority of an existing task'''
+        if task in self.entry_finder:
+            self.remove_task(task)
+        count = next(self.counter)
+        entry = [priority, count, task]
+        self.entry_finder[task] = entry
+        heapq.heappush(self.heap, entry)
+
+    def del_min(self):
+        ''' remove & return lowest priority task; keyError if empty'''
+        while self.heap:
+            priority, count, task = heapq.heappop(self.heap)
+            if task is not self.REMOVED:
+                del self.entry_finder[task]
+                return task
+        raise KeyError('pop from empty PQ')
+
+    def is_empty(self):
+        ''' determines if there are tasks in the PQ based on entry finder'''
+        return len(self.entry_finder) > 0
+        # while self.heap[0][-1] == self.REMOVED:
+        #     heapq.heappop(self.heap)
+        # if len(self.heap) == 0:
+        #     return True
+        # return False
+
+    def contians(self, task):
+        if task in self.entry_finder:
+            return True
+        return False
+
+
+class DijkstraSP():
+    ''' Dijkstra's SP algo implemented w/ priority queue for O(ELogV) complexity '''
+
+    def __init__(self, G, s):
+        self.edge_to = [None for v in range(G.V)]
+        self.dist_to = [float('inf') for v in range(G.V)]
+        self.dist_to[s] = 0
+        self.pq = MinPriorityQueue()
+
+        self.pq.insert_task(s, 0)
+
+        while not self.pq.is_empty():
+            self._relax(G, self.pq.del_min())
+
+    def _relax(self, G, v):
+        for edge in G.adj[v]:
+            w = edge.to_v
+            if self.dist_to[w] > self.dist_to[v] + edge.weight:
+                self.dist_to[w] = self.dist_to[v] + edge.weight
+                self.edge_to[w] = edge
+                self.pq.insert_task(w, self.dist_to[w])
