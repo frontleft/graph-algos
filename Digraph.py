@@ -1,3 +1,4 @@
+from collections import deque
 '''
 Python3 implementation of unweighted directed graph data type
 '''
@@ -118,3 +119,83 @@ class DirectedCycle():
     @property
     def cycle(self):
         return self._cycle
+
+
+class DepthFirstOrder():
+    def __init__(self, G):
+        self._pre = deque()
+        self._post = deque()
+        self._reverse_post = deque()
+        self.marked = [False for v in range(G.V)]
+
+        for v in range(G.V):
+            if not self.marked[v]:
+                self._dfs(G, v)
+
+    def _dfs(self, G, v):
+        self._pre.appendleft(v)
+        self.marked[v] = True
+        for w in G.adj[v]:
+            if not self.marked[w]:
+                self._dfs(G, w)
+        self.post.appendleft(v)
+        self.reverse_post.append(v)
+
+    @property
+    def pre(self):
+        return list(self._pre)
+
+    @property
+    def post(self):
+        return list(self._post)
+
+    @property
+    def reverse_post(self):
+        return list(self._reverse_post)
+
+
+class Topological():
+    def __init__(self, G):
+        self._order = []
+
+        cycle_finder = DirectedCycle(G)
+        if not cycle_finder.has_cycle():
+            dfs = DepthFirstOrder(G)
+            self._order = dfs.reverse_post
+
+    def order(self):
+        return self._order
+
+    def is_DAG(self):
+        return len(self._order) > 0
+
+
+class KosarajuSCC():
+    ''' Kosaraju's algo for computing strongly connected components '''
+
+    def __init__(self, G):
+        self._marked = [False for v in range(G.V)]
+        self._id = [v for v in range(G.V)]
+        self._count = 0
+        order = DepthFirstOrder(G.reverse())
+        for s in order.reverse_post:
+            if not self._marked[s]:
+                self._dfs(G, s)
+                self._count += 1
+
+    def _dfs(self, G, v):
+        self._marked[v] = True
+        self._id[v] = self._count
+        for w in G.adj[v]:
+            if not self._marked[w]:
+                self._dfs(G, w)
+
+    def strongly_connected(self, v, w):
+        return self._id[v] == self._id[w]
+
+    def identifier(self, v):
+        return self._id[v]
+
+    @property
+    def count(self):
+        return self._count
