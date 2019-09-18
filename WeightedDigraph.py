@@ -1,5 +1,6 @@
 import heapq
 import itertools
+from collections import deque
 ''' Python3 implementation of weighted graph algos'''
 
 
@@ -65,7 +66,7 @@ class EdgeWeightedDigraph():
         Adds a weighted directed edge v->w to the digraph
 
         Parameters:
-        edge    Edge    edge to be added 
+        edge    Edge    edge to be added
 
         Return:
         void
@@ -161,3 +162,132 @@ class DijkstraSP():
             path.append(e)
             e = self.edge_to[e.from_v]
         return path
+
+
+class BellmanFordSP():
+    '''Bellman-Ford algorithm w/ a queue to find shortest path in a edge-weighted digraph with negative edges
+    O(EV) complexity
+    '''
+
+    def __init__(self, G, s):
+        self.edge_to = [None for v in range(G.V)]
+        self.dist_to = [float('inf') for v in range(G.V)]
+        self.dist_to[s] = 0
+        self.on_q = [False for v in range(G.V)]
+        self.q = deque()
+        self.cost = 0  # num of times relax has been called
+        self.cycle = []
+        # initialize the state of the queue
+        self.q.append(s)
+        self.on_q[s] = True
+
+        while len(self.q) > 0 and not self.has_neg_cycle():
+            v = self.q.popleft()
+
+            self.on_q[v] = False
+            self.relax(G, v)
+
+    def has_neg_cycle(self):
+        return len(self.cycle) > 0
+
+    def get_neg_cycle(self):
+        return self.cycle
+
+    def _find_neg_cycle(self):
+        ''' builds a new graph of just the edges on the shortest paths, searches for cycle
+        if there is a cycle, it must be negative weight'''
+        V = len(self.edge_to)
+        spt = EdgeWeightedDigraph(V)
+        for v in range(V):
+            if self.edge_to[v]:
+                spt.add_edge(self.edge_to[v])
+        cf = EdgeWeightedCycleFinder(spt)
+        self.cycle = cf.cycle
+
+    def relax(self, G, v):
+        self.cost += 1
+        for edge in G.adj[v]:
+            w = edge.to_v
+            if self.dist_to[w] > self.dist_to[v] + edge.weight:
+                self.dist_to[w] = self.dist_to[v] + edge.weight
+                self.edge_to[w] = edge
+                if not self.on_q[w]:
+                    self.q.append(w)
+                    self.on_q[w] = True
+            if self.cost % G.V == 0:
+                print(self.cost, G.V, '*')
+                self._find_neg_cycle()
+
+    def has_path_to(self, v):
+        return self.dist_to[v] < float('inf')
+
+    def path_to(self, v):
+        if not self.has_path_to(v):
+            return None
+        path = []
+        e = self.edge_to[v]
+        while e != None:
+            path.append(e)
+            e = self.edge_to[e.from_v]
+        return path
+
+
+class EdgeWeightedCycleFinder():
+    def __init__(self, G):
+        self.on_stack = [False for v in range(G.V)]
+        self.edge_to = [None for v in range(G.V)]
+        self.marked = [False for v in range(G.V)]
+        self._cycle = []
+        for v in range(G.V):
+            if not self.marked[v]:
+                self._dfs(G, v)
+
+    def _dfs(self, G, v):
+        print(G)
+        self.on_stack[v] = True
+        self.marked[v] = True
+        for edge in G.adj[v]:
+            w = edge.to_v
+            if self.has_cycle():
+                return
+            elif not self.marked[w]:
+                self.edge_to[w] = v
+                self._dfs(G, w)
+            elif self.on_stack[w]:
+                x = v
+                while x != w:
+                    self._cycle.append(x)
+                    x = self.edge_to[x]
+                self._cycle.append(w)
+                self._cycle.append(v)
+        self.on_stack[v] = False
+
+    def has_cycle(self):
+        return len(self._cycle) > 0
+
+    @property
+    def cycle(self):
+        return self._cycle
+
+
+G = EdgeWeightedDigraph(8)
+G.add_edge(DirectedEdge(4, 5, 35))
+G.add_edge(DirectedEdge(5, 4, -66))
+G.add_edge(DirectedEdge(4, 7, 37))
+G.add_edge(DirectedEdge(5, 7, 28))
+G.add_edge(DirectedEdge(7, 5, 28))
+G.add_edge(DirectedEdge(5, 1, 32))
+G.add_edge(DirectedEdge(0, 4, 38))
+G.add_edge(DirectedEdge(0, 2, 26))
+G.add_edge(DirectedEdge(7, 3, 39))
+G.add_edge(DirectedEdge(1, 3, 29))
+G.add_edge(DirectedEdge(2, 7, 34))
+G.add_edge(DirectedEdge(6, 2, 40))
+G.add_edge(DirectedEdge(3, 6, 52))
+G.add_edge(DirectedEdge(6, 0, 58))
+G.add_edge(DirectedEdge(6, 4, 93))
+
+
+spt = BellmanFordSP(G, 0)
+print(spt.has_neg_cycle())
+print(spt.get_neg_cycle())
