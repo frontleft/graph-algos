@@ -115,7 +115,7 @@ class MinPriorityQueue():
 
     def is_empty(self):
         ''' determines if there are tasks in the PQ based on entry finder'''
-        return len(self.entry_finder) > 0
+        return len(self.entry_finder) <= 0
         # while self.heap[0][-1] == self.REMOVED:
         #     heapq.heappop(self.heap)
         # if len(self.heap) == 0:
@@ -138,8 +138,8 @@ class DijkstraSP():
         self.pq = MinPriorityQueue()
 
         self.pq.insert_task(s, 0)
-
         while not self.pq.is_empty():
+
             self._relax(G, self.pq.del_min())
 
     def _relax(self, G, v):
@@ -215,14 +215,13 @@ class BellmanFordSP():
                     self.q.append(w)
                     self.on_q[w] = True
             if self.cost % G.V == 0:
-                print(self.cost, G.V, '*')
                 self._find_neg_cycle()
 
     def has_path_to(self, v):
         return self.dist_to[v] < float('inf')
 
     def path_to(self, v):
-        if not self.has_path_to(v):
+        if not self.has_path_to(v) or self.has_neg_cycle():
             return None
         path = []
         e = self.edge_to[v]
@@ -243,7 +242,6 @@ class EdgeWeightedCycleFinder():
                 self._dfs(G, v)
 
     def _dfs(self, G, v):
-        print(G)
         self.on_stack[v] = True
         self.marked[v] = True
         for edge in G.adj[v]:
@@ -268,26 +266,3 @@ class EdgeWeightedCycleFinder():
     @property
     def cycle(self):
         return self._cycle
-
-
-G = EdgeWeightedDigraph(8)
-G.add_edge(DirectedEdge(4, 5, 35))
-G.add_edge(DirectedEdge(5, 4, -66))
-G.add_edge(DirectedEdge(4, 7, 37))
-G.add_edge(DirectedEdge(5, 7, 28))
-G.add_edge(DirectedEdge(7, 5, 28))
-G.add_edge(DirectedEdge(5, 1, 32))
-G.add_edge(DirectedEdge(0, 4, 38))
-G.add_edge(DirectedEdge(0, 2, 26))
-G.add_edge(DirectedEdge(7, 3, 39))
-G.add_edge(DirectedEdge(1, 3, 29))
-G.add_edge(DirectedEdge(2, 7, 34))
-G.add_edge(DirectedEdge(6, 2, 40))
-G.add_edge(DirectedEdge(3, 6, 52))
-G.add_edge(DirectedEdge(6, 0, 58))
-G.add_edge(DirectedEdge(6, 4, 93))
-
-
-spt = BellmanFordSP(G, 0)
-print(spt.has_neg_cycle())
-print(spt.get_neg_cycle())
