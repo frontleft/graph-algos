@@ -66,7 +66,7 @@ class DirectedDFS():
     def __init__(self, G, sources):
         self.G = G  # A Digraph
         self.sources = sources  # A list of sources
-        self._marked = [False for _ in range(G.V)]
+        self._marked = [False for v in range(G.V)]
         for s in sources:
             if not self.is_marked(s):
                 self._dfs(G, s)
@@ -82,3 +82,39 @@ class DirectedDFS():
 
     def is_marked(self, v):
         return self._marked[v]
+
+
+class DirectedCycle():
+    def __init__(self, G):
+        self.on_stack = [False for v in range(G.V)]
+        self.edge_to = [v for v in range(G.V)]
+        self.marked = [False for v in range(G.V)]
+        self._cycle = []
+        for v in range(G.V):
+            if not self.marked[v]:
+                self._dfs(G, v)
+
+    def _dfs(self, G, v):
+        self.on_stack[v] = True
+        self.marked[v] = True
+        for w in G.adj[v]:
+            if self.has_cycle():
+                return
+            elif not self.marked[w]:
+                self.edge_to[w] = v
+                self._dfs(G, w)
+            elif self.on_stack[w]:
+                x = v
+                while x != w:
+                    self._cycle.append(x)
+                    x = self.edge_to[x]
+                self._cycle.append(w)
+                self._cycle.append(v)
+        self.on_stack[v] = False
+
+    def has_cycle(self):
+        return len(self._cycle) > 0
+
+    @property
+    def cycle(self):
+        return self._cycle
