@@ -1,3 +1,8 @@
+'''
+Python3 Implementation of flow network algorithms (Ford Fulkerson, etc.)
+'''
+
+
 class FlowEdge():
     def __init__(self, v, w, capacity, flow):
         self._v = v
@@ -13,7 +18,14 @@ class FlowEdge():
         return self._v
 
     @property
+    def from_v(self):
+        return self._v
+
+    @property
     def w(self):
+        return self._w
+
+    def to_v(self):
         return self._w
 
     @property
@@ -46,17 +58,52 @@ class FlowEdge():
         else:
             raise IndexError('Invalid endpoint')
 
-    def residual_capacity(self, vertex):
-        pass
+    def residual_capacity_to(self, vertex):
+        if (vertex == self._v):
+            return self._flow
+        elif (vertex == self._w):
+            return self._capacity - self._flow
+        else:
+            raise IndexError('Invalid endpoint')
 
     def add_resid_flow_to(self, vertex, delta):
-        pass
+        if (vertex == self._v):
+            self.flow -= delta
+        elif (vertex == self._w):
+            self.flow += delta
+        else:
+            raise IndexError('Invalid endpoint')
 
 
 class FlowNetwork():
-    def __init__(self):
-        pass
+    def __init__(self, V):
+        self._V = V
+        self._E = 0
+        self._adj = [[] for v in range(V)]
 
     def __str__(self):
         s = f''
         return s
+
+    @property
+    def V(self):
+        return self._V
+
+    @property
+    def E(self):
+        return self._V
+
+    @E.setter
+    def E(self, new_E):
+        self._E = new_E
+
+    @property
+    def adj(self):
+        return self._adj
+
+    def add_edge(self, edge):
+        self.E += 1
+        v = edge.from_v
+        w = edge.to_v
+        self.adj[v].appened(edge)
+        self.adj[w].append(edge)
