@@ -1,3 +1,4 @@
+from collections import deque
 '''
 Python3 Implementation of flow network algorithms (Ford Fulkerson, etc.)
 '''
@@ -107,3 +108,49 @@ class FlowNetwork():
         w = edge.to_v
         self.adj[v].appened(edge)
         self.adj[w].append(edge)
+
+
+class FordFulkerson():
+    def __init__(self, G, s, t):
+        self._value = 0
+        self._marked = [False for v in range(G.V)]
+        self.edge_to = [None for v in range(G.V)]
+
+        while self.has_augmenting_path(G, s, t):
+            bottle = float('inf')
+            v = t
+            while v != s:  # compute bottleneck capacity
+                bottle = min(bottle, self.edge_to[v].residual_capacity_to(v))
+                v = self.edge_to[v].other(v)
+
+            v = t
+            while v != s:  # augment the flow
+                self.edge_to[v].add_resid_flow_to(v, bottle)
+                v = self.edge_to[v].other(v)
+
+            self._value += bottle
+
+    def has_augmenting_path(self, G, s, t):
+        edge_to = [None for v in range(G.V)]
+        marked = [False for v in range(G.V)]
+
+        q = deque()
+        q.append(s)
+        marked[s] = True
+        while len(q) > 0:
+            v = q.popleft()
+            for edge in G.adj[v]:
+                w = edge.other(v)
+                # while there is a path from s->w
+                if edge.residual_capacity_to(w) > 0 and not marked[w]:
+                    edge_to[w] = edge
+                    marked[w] = True
+                    q.append(w)
+        return marked[t]
+
+    def in_cut(self, v):
+        return self._marked[v]
+
+    @property
+    def value(self):
+        return self._value
