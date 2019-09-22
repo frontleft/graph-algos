@@ -21,6 +21,9 @@ class DirectedEdge():
         else:
             raise IndexError()
 
+    def either(self):
+        return self.v
+
     @property
     def from_v(self):
         return self.v
@@ -266,3 +269,85 @@ class EdgeWeightedCycleFinder():
     @property
     def cycle(self):
         return self._cycle
+
+
+class LazyPrimsMST():
+    def __init__(self, G):
+        self._marked = [False for v in range(G.V)]
+        self.mst = deque()
+        self.q = MinPriorityQueue()
+
+        # initialize the queue (arbitrarily w/ vertex 0)
+        self.visit(G, 0)
+        while not self.q.is_empty():
+            e = self.q.del_min()
+            v = e.either()
+            w = e.other(v)
+            if not self._marked[v] or not self._marked[w]:
+                self.mst.append(e)  # add to the MST
+            if not self._marked[v]:
+                self.visit(G, v)
+            if not self._marked[w]:
+                self.visit(G, w)
+
+    @property
+    def weight(self):
+        '''
+        Returns the weight of the edges in the minimum spanning tree
+        '''
+        w = 0
+        for edge in list(self.mst):
+            w += edge.weight
+        return w
+
+    @property
+    def edges(self):
+        return self.mst
+
+    def visit(self, G, v):
+        '''
+        Visits a vertex, adds it to the MST, and enqueues its valid  adjacent edges on the PQ
+
+        Parameters:
+        G       EdgeWeightedDigraph         Edge-weighted digraph from which to construct the MST.
+        v       Int                         Index of the vertex to visit.
+
+        Return
+        void
+        '''
+        self._marked[v] = True
+        for edge in G.adj[v]:
+            if not self._marked[edge.other(v)]:
+                self.q.insert_task(edge, edge.weight)
+
+
+G = EdgeWeightedDigraph(8)
+G.add_edge(DirectedEdge(4, 5, 35))
+# G.add_edge(DirectedEdge(5, 4, -66))
+G.add_edge(DirectedEdge(4, 7, 37))
+G.add_edge(DirectedEdge(5, 7, 28))
+G.add_edge(DirectedEdge(7, 5, 28))
+G.add_edge(DirectedEdge(5, 1, 32))
+G.add_edge(DirectedEdge(0, 4, 38))
+G.add_edge(DirectedEdge(0, 2, 26))
+G.add_edge(DirectedEdge(7, 3, 39))
+G.add_edge(DirectedEdge(1, 3, 29))
+G.add_edge(DirectedEdge(2, 7, 34))
+G.add_edge(DirectedEdge(6, 2, 40))
+G.add_edge(DirectedEdge(3, 6, 52))
+G.add_edge(DirectedEdge(6, 0, 58))
+G.add_edge(DirectedEdge(6, 4, 93))
+
+origin = 1
+dest = 7
+bf = BellmanFordSP(G, origin)
+dj = DijkstraSP(G, origin)
+print('dijk')
+path_to_5 = reversed(dj.path_to(dest))
+for edge in path_to_5:
+    print(edge)
+
+print('bf')
+path_bo_5 = reversed(bf.path_to(dest))
+for edge in path_bo_5:
+    print(edge)
