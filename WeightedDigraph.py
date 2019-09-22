@@ -321,6 +321,45 @@ class LazyPrimsMST():
                 self.q.insert_task(edge, edge.weight)
 
 
+class EagerPrimsMST():
+    def __init__(self, G):
+        self.marked = [False for v in range(G.V)]
+        self.edge_to = [None for v in range(G.V)]
+        self.dist_to = [float('inf') for v in range(G.V)]
+        self.q = MinPriorityQueue()
+        self._weight = 0
+
+        # initialize the PQ (arbitrarily w/ vertex 0)
+        self.dist_to[0] = 0
+        self.q.insert_task(0, 0)
+
+        while not self.q.is_empty():
+            self.visit(G, self.q.del_min())
+
+    def visit(self, G, v):
+        self.marked[v] = True
+        for edge in G.adj[v]:
+            w = edge.other()
+            if not self.marked[w] and edge.weight < self.dist_to[w]:
+                # eager update of weight
+                if self.dist_to[w] == float('inf'):
+                    self._weight += edge.weight
+                else:
+                    self._weight -= (self.dist_to[w] - edge.weight)
+
+                self.edge_to[w] = edge
+                self.dist_to[w] = edge.weight
+                self.q.insert_task(w, self.dist_to[w])
+
+    @property
+    def edges(self):
+        return self.edge_to[1:]
+
+    @property
+    def weight(self):
+        return self._weight
+
+
 G = EdgeWeightedDigraph(8)
 G.add_edge(DirectedEdge(4, 5, 35))
 # G.add_edge(DirectedEdge(5, 4, -66))
