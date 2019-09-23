@@ -272,6 +272,10 @@ class EdgeWeightedCycleFinder():
 
 
 class LazyPrimsMST():
+    '''
+    ** INVALID FOR Directed Graphs; Only valid for undirected graphs **
+    '''
+
     def __init__(self, G):
         self._marked = [False for v in range(G.V)]
         self.mst = deque()
@@ -322,6 +326,10 @@ class LazyPrimsMST():
 
 
 class EagerPrimsMST():
+    '''
+    ** INVALID FOR Directed Graphs; Only valid for undirected graphs **
+    '''
+
     def __init__(self, G):
         self.marked = [False for v in range(G.V)]
         self.edge_to = [None for v in range(G.V)]
@@ -354,6 +362,67 @@ class EagerPrimsMST():
     @property
     def edges(self):
         return self.edge_to[1:]
+
+    @property
+    def weight(self):
+        return self._weight
+
+
+class UnionFind():
+    def __init__(self, N):
+        self.id = [i for i in range(N)]
+        self.weight = [1 for i in range(N)]
+        self._count = N
+
+    @property
+    def count(self):
+        return self._count
+
+    def union(self, u, v):
+        u_parent = self.find(u)
+        v_parent = self.find(v)
+        if self.weight[u_parent] > self.weight[v_parent]:
+            self.id[v_parent] = u_parent
+            self.weight[u_parent] += self.weight[v_parent]
+        else:
+            self.id[u_parent] = v_parent
+            self.weight[v_parent] += self.weight[u_parent]
+        self.count -= 1
+
+    def find(self, u):
+        while u != self.id[u]:
+            u = self.id[u]
+        return u
+
+    def connected(self, u, v):
+        # if they have the same parent, true; else false
+        return self.find(u) == self.find(v)
+
+
+class KruskalsMST():
+    '''
+    ** INVALID FOR Directed Graphs; Only valid for undirected graphs **
+    '''
+
+    def __init__(self, G):
+        self.mst = []
+        self.q = MinPriorityQueue()
+        self.uf = UnionFind(G.V)
+        self._weight = 0
+
+        while not self.q.is_empty():
+            edge = self.q.del_min()
+            v = edge.either()
+            w = edge.other(v)
+            if self.uf.connected(v, w):
+                continue
+            self.uf.union(v, w)
+            self.mst.append(edge)
+            self._weight += edge.weight
+
+    @property
+    def edges(self):
+        return self.mst
 
     @property
     def weight(self):
