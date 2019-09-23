@@ -166,7 +166,7 @@ class FordFulkerson():
         Parameters:
         G       FlowNetwork     Flow network to search for augmenting path within
         s       Int             Source vertex
-        t       Int             Sink vertex  
+        t       Int             Sink vertex
         '''
         self._value = 0
         self._marked = [False for v in range(G.V)]
@@ -208,7 +208,7 @@ class FordFulkerson():
         Parameters:
         G       FlowNetwork     Flow network to search for augmenting path within
         s       Int             Source vertex
-        t       Int             Sink vertex  
+        t       Int             Sink vertex
 
         Return:
         bool                    True if there is a augmenting path from s->t else false
@@ -254,15 +254,69 @@ class Dinics():
     '''
 
     def __init__(self, G, s, t):
-        # set all edges' flow to 0
-        # while distance to t < infinity:
-        #   construct layered graph (Gl)from residual graph of G
-        #   if distance of sink (t) is infinity
-        #   find a blocking flow (f') in Gl
-        #   augment flow f by f'
-        # return f
+        self.dist_to = [float('inf') if v != 0 else 0 for v in range(G.V)]
+        self.marked = [False if v != 0 else True for v in range(G.V)]
+        self.edge_to = [None for v in range(G.V)]
+        self.total_flow = 0
+        self._s = s
+        self._t = t
+        self._G = G
 
-        pass
+        # assumes all edges' flow set to 0
+
+        #   construct level graph (Gl)from residual graph of G
+        while self.construct_level(G, s, t):
+            #   find a blocking flow (f') in Gl & augment flow
+            flow = self.augment_flow(G, s, t, float('inf'))
+            while (flow > 0):
+                self.total_flow += flow
+                flow = self.augment_flow(G, s, t, float('inf'))
+
+    def __str__(self):
+        s = f'Max flow from {self._s} to {self._t}: \n'
+        for v in range(self._G.V):
+            for edge in self._G.adj[v]:
+                if v == edge.from_v and edge.flow > 0:
+                    s += str(edge) + '\n'
+        s += f'Max flow value = {self.total_flow}\n'
+        return s
+
+    def construct_level(self, G, s, t):
+        '''
+        Calculates distances in the level graph; returns True if there is an s-t path in the graph, false otherwise
+        '''
+        self.dist_to = [float('inf') if v != 0 else 0 for v in range(G.V)]
+        q = deque()  # initialize a queue for the BFS
+        q.append(s)
+        while len(q) > 0:
+            v = q.popleft()
+            for edge in G.adj[v]:
+                w = edge.other(v)
+                if self.dist_to[w] == float('inf') and edge.residual_capacity_to(w) > 0:
+                    self.dist_to[w] = self.dist_to[v] + 1
+                    q.append(w)
+        return self.dist_to[t] != float('inf')
+
+    def augment_flow(self, G, u, t, flow):
+        '''
+        Conducts a DFS through the residual graph 
+        '''
+        # base case
+        if u == t:
+            return flow
+
+        for edge in G.adj[u]:
+            w = edge.other(u)
+            residual_capacity = edge.residual_capacity_to(w)
+            if self.dist_to[w] == self.dist_to[u] + 1 and residual_capacity > 0:
+                cur_flow = min(flow, residual_capacity)
+                temp_flow = self.augment_flow(G, w, t, cur_flow)
+
+                if temp_flow > 0:
+                    edge.add_resid_flow_to(w, temp_flow)
+                    return temp_flow
+
+        return 0
 
 
 G = FlowNetwork(6)
@@ -276,4 +330,30 @@ G.add_edge(FlowEdge(3, 5, 2))
 G.add_edge(FlowEdge(4, 5, 3))
 ff_g = FordFulkerson(G, 0, 5)
 print(ff_g)
-print(ff_g.min_cut())
+
+G2 = FlowNetwork(6)
+G2.add_edge(FlowEdge(0, 1, 2))
+G2.add_edge(FlowEdge(0, 2, 3))
+G2.add_edge(FlowEdge(1, 3, 3))
+G2.add_edge(FlowEdge(1, 4, 1))
+G2.add_edge(FlowEdge(2, 3, 1))
+G2.add_edge(FlowEdge(2, 4, 1))
+G2.add_edge(FlowEdge(3, 5, 2))
+G2.add_edge(FlowEdge(4, 5, 3))
+d_g = Dinics(G2, 0, 5)
+print(G)
+print(d_g)
+
+G3 = FlowNetwork(6)
+G3.add_edge(FlowEdge(0, 1, 16))
+G3.add_edge(FlowEdge(0, 2, 13))
+G3.add_edge(FlowEdge(1, 2, 10))
+G3.add_edge(FlowEdge(1, 3, 12))
+G3.add_edge(FlowEdge(2, 1, 4))
+G3.add_edge(FlowEdge(2, 4, 14))
+G3.add_edge(FlowEdge(3, 2, 9))
+G3.add_edge(FlowEdge(3, 5, 20))
+G3.add_edge(FlowEdge(4, 3, 7))
+G3.add_edge(FlowEdge(4, 5, 4))
+dg2 = Dinics(G3, 0, 5)
+print(dg2)
