@@ -175,6 +175,7 @@ class FordFulkerson():
         self._s = s
         self._t = t
 
+        # mutates the edge_to array to reflect an augmenting path
         while self.has_augmenting_path(G, s, t):
             bottle = float('inf')
 
@@ -201,6 +202,9 @@ class FordFulkerson():
 
     def has_augmenting_path(self, G, s, t):
         '''
+        Mutates the edge_to instance variable to reflect an augmenting path if it exists. This method uses
+        BFS to find augmenting paths (i.e. Edmonds-Karp O(E^2 * V)).
+
         Parameters:
         G       FlowNetwork     Flow network to search for augmenting path within
         s       Int             Source vertex
@@ -226,12 +230,39 @@ class FordFulkerson():
                     q.append(w)
         return self._marked[t]
 
+    def min_cut(self):
+        '''
+        Finds the minimum cut in a flow network by first finding the max flow. When FF terminates it has found a max flow and the last BFS will have marked the reachable vertices in the residual graph
+        '''
+        cut = []
+        for v, marked in enumerate(self._marked):
+            if marked:
+                cut.append(v)
+        return cut
+
     def in_cut(self, v):
         return self._marked[v]
 
     @property
     def value(self):
         return self._value
+
+
+class Dinics():
+    ''' Constructs layered graph from residual graph via BFS. Compute blocking flow in GF, augment f by g. Blocking flow means there is no path
+    in G such that there is room left on every path. O(V^2 * E)
+    '''
+
+    def __init__(self, G, s, t):
+        # set all edges' flow to 0
+        # while distance to t < infinity:
+        #   construct layered graph (Gl)from residual graph of G
+        #   if distance of sink (t) is infinity
+        #   find a blocking flow (f') in Gl
+        #   augment flow f by f'
+        # return f
+
+        pass
 
 
 G = FlowNetwork(6)
@@ -245,3 +276,4 @@ G.add_edge(FlowEdge(3, 5, 2))
 G.add_edge(FlowEdge(4, 5, 3))
 ff_g = FordFulkerson(G, 0, 5)
 print(ff_g)
+print(ff_g.min_cut())
