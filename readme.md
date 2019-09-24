@@ -10,7 +10,8 @@ Python3 implementations for:
 * Flow Networks
 * Ford Fulkerson (Edmonds Karp)
 * Dinic's
+* Push-Relabel flows (FIFO queue)
 
 To Add
 * All Pairs Shortest Paths
-* Push-Relabel flows
+* Floyd Warshall
