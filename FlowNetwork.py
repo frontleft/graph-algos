@@ -296,7 +296,7 @@ class Dinics():
 
     def augment_flow(self, G, u, t, flow):
         '''
-        Conducts a DFS through the residual graph 
+        Conducts a DFS through the residual graph
         '''
         # base case
         if u == t:
@@ -320,6 +320,14 @@ class DoublyLinkedList():
     def __init__(self):
         self.head = None
         self.tail = None
+
+    def __str__(self):
+        s = ''
+        cur = self.head
+        while cur != None:
+            s += f'- {cur}'
+            cur = cur.next
+        return s
 
     def is_empty(self):
         return self.head == None
@@ -345,6 +353,9 @@ class DoublyLinkedList():
             self.head.prev = new_node
             self.head = new_node
         return new_node
+
+    def peek_head(self):
+        return self.head
 
     def pop_head(self):
         if not self.head:
@@ -373,6 +384,8 @@ class DoublyLinkedList():
         return tmp
 
     def remove(self, node):
+        if node == None:
+            return None
         if not self.head:
             raise IndexError('Cannot remove from empty list')
         if node == self.head and node == self.tail:
@@ -398,6 +411,9 @@ class DoublyLinkedListNode():
         self.prev = None
         self.item = item
 
+    def __str__(self):
+        return f'({self.item})'
+
 
 class PushRelabel():
     '''
@@ -419,23 +435,72 @@ class PushRelabel():
         s           Int             The index of the source vertex
         t           Int             The index of the sink vertex
         '''
-        self.heights = [0 if v != s else G.V for v in range(G.V)]
         self.excess_flows = [0 for v in range(G.V)]
-        self.edge_to = [None for v in range(G.V)]
+        self.heights = [0 if v != s else G.V for v in range(G.V)]
+        self.overflow_list = DoublyLinkedList()
+        self.overflows = [None for v in range(G.V)]
+        self._G = G
+        self._s = s
+        self._t = t
+
         # initialize the edges coming out of the source with a preflow equivalent to their capacity
         for edge in G.adj[s]:
             w = edge.other(s)
             preflow = edge.residual_capacity_to(w)
             edge.add_resid_flow_to(w, preflow)
+            self.excess_flows[w] += preflow
+            self.excess_flows[s] -= preflow
+            # source initially has negative excess flow
+            self.overflows[w] = self.overflow_list.insert_tail(w)
 
-        while True:
-            i = 1
+        while not self.overflow_list.is_empty():
+            # take vertex from front of overflow list (repeatedly; pops when excess is removed in push)
+            u = self.overflow_list.peek_head().item
+            pushed = False
+            # attempt to push if u has an outgoing edge that is downhill & has capacity
+            for edge in G.adj[u]:
+                w = edge.other(u)
+                if edge.residual_capacity_to(w) > 0 and self.heights[u] == self.heights[w] + 1:
+                    self.push(u, edge)
+                    pushed = True
+                    break
+            if not pushed:  # else relabel u
+                if u == self._s or u == self._t:  # can't change height of the sink or source
+                    continue
+                self.relabel(G, u)
 
-    def push(self):
-        pass
+    def __str__(self):
+        s = f'Max flow from {self._s} to {self._t}: \n'
+        for v in range(self._G.V):
+            for edge in self._G.adj[v]:
+                if v == edge.from_v and edge.flow > 0:
+                    s += str(edge) + '\n'
+        return s
 
-    def relabel(self):
-        pass
+    def push(self, u, edge):
+        v = edge.other(u)
+        delta_flow = min(self.excess_flows[u], edge.residual_capacity_to(v))
+        edge.add_resid_flow_to(v, delta_flow)
+
+        self.excess_flows[u] -= delta_flow
+        # * if u is now not overflowing, need to remove from the overflow list
+        if self.excess_flows[u] == 0:
+            node = self.overflows[u]
+            self.overflow_list.remove(node)
+            self.overflows[u] = None
+
+        # * if not already in the overflow list, need to add v & save pointer
+        self.excess_flows[v] += delta_flow
+        if self.excess_flows[v] > 0 and not self.overflows[v] and (v != self._s and v != self._t):
+            self.overflows[v] = self.overflow_list.insert_tail(v)
+
+    def relabel(self, G, u):
+        min_height = self.heights[u]
+        for edge in G.adj[u]:
+            v = edge.other(u)
+            if edge.residual_capacity_to(v) > 0:
+                min_height = min(min_height, self.heights[v])
+        self.heights[u] = min_height + 1
 
 
 G = FlowNetwork(6)
@@ -460,7 +525,6 @@ G2.add_edge(FlowEdge(2, 4, 1))
 G2.add_edge(FlowEdge(3, 5, 2))
 G2.add_edge(FlowEdge(4, 5, 3))
 d_g = Dinics(G2, 0, 5)
-print(G)
 print(d_g)
 
 G3 = FlowNetwork(6)
@@ -476,3 +540,17 @@ G3.add_edge(FlowEdge(4, 3, 7))
 G3.add_edge(FlowEdge(4, 5, 4))
 dg2 = Dinics(G3, 0, 5)
 print(dg2)
+
+G4 = FlowNetwork(6)
+G4.add_edge(FlowEdge(0, 1, 16))
+G4.add_edge(FlowEdge(0, 2, 13))
+G4.add_edge(FlowEdge(1, 2, 10))
+G4.add_edge(FlowEdge(1, 3, 12))
+G4.add_edge(FlowEdge(2, 1, 4))
+G4.add_edge(FlowEdge(2, 4, 14))
+G4.add_edge(FlowEdge(3, 2, 9))
+G4.add_edge(FlowEdge(3, 5, 20))
+G4.add_edge(FlowEdge(4, 3, 7))
+G4.add_edge(FlowEdge(4, 5, 4))
+p_p = PushRelabel(G4, 0, 5)
+print(p_p)
