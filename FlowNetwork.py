@@ -249,14 +249,11 @@ class FordFulkerson():
 
 
 class Dinics():
-    ''' Constructs layered graph from residual graph via BFS. Compute blocking flow in GF, augment f by g. Blocking flow means there is no path
-    in G such that there is room left on every path. O(V^2 * E)
+    ''' Constructs layered graph from residual graph via BFS. Compute blocking flow in GF, augment f by g. Blocking flow means there is no path in G such that there is room left on every path. O(V^2 * E)
     '''
 
     def __init__(self, G, s, t):
         self.dist_to = [float('inf') if v != 0 else 0 for v in range(G.V)]
-        self.marked = [False if v != 0 else True for v in range(G.V)]
-        self.edge_to = [None for v in range(G.V)]
         self.total_flow = 0
         self._s = s
         self._t = t
@@ -317,6 +314,128 @@ class Dinics():
                     return temp_flow
 
         return 0
+
+
+class DoublyLinkedList():
+    def __init__(self):
+        self.head = None
+        self.tail = None
+
+    def is_empty(self):
+        return self.head == None
+
+    def insert_tail(self, item):
+        new_node = DoublyLinkedListNode(item)
+        if not self.tail:
+            self.head = new_node
+            self.tail = new_node
+        else:
+            new_node.prev = self.tail
+            self.tail.next = new_node
+            self.tail = new_node
+        return new_node
+
+    def insert_head(self, item):
+        new_node = DoublyLinkedListNode(item)
+        if not self.head:
+            self.head = new_node
+            self.tail = new_node
+        else:
+            new_node.next = self.head
+            self.head.prev = new_node
+            self.head = new_node
+        return new_node
+
+    def pop_head(self):
+        if not self.head:
+            raise IndexError('Cannot pop from empty list')
+        tmp = self.head
+        if tmp.next:
+            self.head = tmp.next
+            self.head.prev = None
+            tmp.next = None
+        else:
+            self.tail = None
+            self.head = None
+        return tmp
+
+    def pop_tail(self):
+        if not self.tail:
+            raise IndexError('Cannot pop from empty list')
+        tmp = self.tail
+        if tmp.prev:
+            self.tail = tmp.prev
+            self.tail.next = None
+            tmp.prev = None
+        else:
+            self.tail = None
+            self.head = None
+        return tmp
+
+    def remove(self, node):
+        if not self.head:
+            raise IndexError('Cannot remove from empty list')
+        if node == self.head and node == self.tail:
+            self.head = None
+            self.tail = None
+        elif node == self.head:
+            self.head = node.next
+        elif node == self.tail:
+            self.tail = node.prev
+        else:
+            next_node = node.next
+            prev_node = node.prev
+            next_node.prev = prev_node
+            prev_node.next = next_node
+        node.prev = None
+        node.next = None
+        return node
+
+
+class DoublyLinkedListNode():
+    def __init__(self, item=None):
+        self.next = None
+        self.prev = None
+        self.item = item
+
+
+class PushRelabel():
+    '''
+    Computes the maximum flow in a flow network using push-relabel / preflow-push algorithm in O(V^2*E)
+    '''
+
+    def __init__(self, G, s, t):
+        '''
+        Assumes the flow network begins with flow of 0
+
+        Invariant:
+        - height(source) = G.V at all times
+        - height(sink) = 0
+        - each edge (v,w) of the residual network (with + resid capacity) has a height
+          differential of <= +1 
+
+        Parameters
+        G           FlowNetwork     The flow network to compute the max flow within
+        s           Int             The index of the source vertex
+        t           Int             The index of the sink vertex
+        '''
+        self.heights = [0 if v != s else G.V for v in range(G.V)]
+        self.excess_flows = [0 for v in range(G.V)]
+        self.edge_to = [None for v in range(G.V)]
+        # initialize the edges coming out of the source with a preflow equivalent to their capacity
+        for edge in G.adj[s]:
+            w = edge.other(s)
+            preflow = edge.residual_capacity_to(w)
+            edge.add_resid_flow_to(w, preflow)
+
+        while True:
+            i = 1
+
+    def push(self):
+        pass
+
+    def relabel(self):
+        pass
 
 
 G = FlowNetwork(6)
