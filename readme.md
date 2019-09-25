@@ -11,7 +11,18 @@ Python3 implementations for:
 * Ford Fulkerson (Edmonds Karp)
 * Dinic's
 * Push-Relabel flows (FIFO queue)
+* Floyd Warshall
 
 To Add
+* Single Soruce Shortest Paths
+- A*
+- B*
+
 * All Pairs Shortest Paths
-* Floyd Warshall
+- Johnosn's Algorithm
+
+* Bipartite Matching
+- Hungarian Algorithm
+
+* Non-Bipartite Matching
+- Edmond's Blossom 
