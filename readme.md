@@ -15,14 +15,15 @@ Python3 implementations for:
 
 To Add
 * Single Soruce Shortest Paths
-- A*
-- B*
+  - A*
+  - B*
 
 * All Pairs Shortest Paths
-- Johnosn's Algorithm
+  - Johnosn's Algorithm
 
 * Bipartite Matching
-- Hungarian Algorithm
+  - Hopcroft-Karp
+  - Hungarian Algorithm
 
 * Non-Bipartite Matching
-- Edmond's Blossom 
+  - Edmond's Blossom 
