@@ -429,33 +429,35 @@ class KruskalsMST():
         return self._weight
 
 
-G = EdgeWeightedDigraph(8)
-G.add_edge(DirectedEdge(4, 5, 35))
-# G.add_edge(DirectedEdge(5, 4, -66))
-G.add_edge(DirectedEdge(4, 7, 37))
-G.add_edge(DirectedEdge(5, 7, 28))
-G.add_edge(DirectedEdge(7, 5, 28))
-G.add_edge(DirectedEdge(5, 1, 32))
-G.add_edge(DirectedEdge(0, 4, 38))
-G.add_edge(DirectedEdge(0, 2, 26))
-G.add_edge(DirectedEdge(7, 3, 39))
-G.add_edge(DirectedEdge(1, 3, 29))
-G.add_edge(DirectedEdge(2, 7, 34))
-G.add_edge(DirectedEdge(6, 2, 40))
-G.add_edge(DirectedEdge(3, 6, 52))
-G.add_edge(DirectedEdge(6, 0, 58))
-G.add_edge(DirectedEdge(6, 4, 93))
+class FloydWarshall():
+    def __init__(self, G):
+        self.dist = [[float('inf') for i in range(G.V)] for j in range(G.V)]
+        self.next = [[None for i in range(G.V)] for j in range(G.V)]
 
-origin = 1
-dest = 7
-bf = BellmanFordSP(G, origin)
-dj = DijkstraSP(G, origin)
-print('dijk')
-path_to_5 = reversed(dj.path_to(dest))
-for edge in path_to_5:
-    print(edge)
+        # * Initialize all distances to their single-edge weights in the adj. matrix
+        for edge in G.get_edges():
+            self.dist[edge.from_v][edge.to_v] = edge.weight
+            self.next[edge.from_v][edge.to_v] = edge.to_v
+        # * Initialize all self-loops to 0
+        for v in range(G.V):
+            self.dist[v][v] = 0
+            self.next[v][v] = v
 
-print('bf')
-path_bo_5 = reversed(bf.path_to(dest))
-for edge in path_bo_5:
-    print(edge)
+        for k in range(1, G.V):
+            for i in range(1, G.V):
+                for j in range(1, G.V):
+                    if self.dist[i][j] > self.dist[i][k] + self.dist[k][j]:
+                        self.dist[i][j] = self.dist[i][k] + self.dist[k][j]
+                        self.next[i][j] = self.next[i][k]
+
+    def distance(self, u, v):
+        return self.dist[u][v]
+
+    def path(self, u, v):
+        if self.next[u][v] == None:
+            return []
+        output = [u]
+        while u != v:
+            u = self.next[u][v]
+            output.append(u)
+        return output
