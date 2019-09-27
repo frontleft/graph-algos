@@ -1,5 +1,6 @@
 from collections import deque
 import math
+
 '''
 Python3 Implementation of flow network algorithms (Ford Fulkerson, etc.)
 '''
@@ -553,3 +554,114 @@ class MaxFlowByScaling(FordFulkerson):
                 self._value += self.bottle
             self.K /= 2
             print(self.K)
+
+
+class Bipartite():
+    def __init__(self, G):
+        self.marked = [False for v in range(G.V)]
+        self._color = [0 for v in range(G.V)]
+        self.edge_to = [None for v in range(G.V)]
+        self.is_bipartite = True
+
+        for v in range(G.V):
+            if not self.marked[v]:
+                self.bfs(G, v)
+
+    def bfs(self, G, s):
+        q = deque()
+        q.append(s)
+        self.marked[s] = True
+        self._color[s] = 1
+
+        while len(q) > 0:
+            v = q.popleft()
+            for edge in G.adj[v]:
+                w = edge.other(v)
+                if not self.marked[w]:
+                    self.marked[w] = True
+                    self._color[w] = -1 * self._color[v]
+                    self.edge_to[w] = v
+                    q.append(w)
+                elif self._color[w] != self._color[v]:
+                    self.is_bipartite = False
+
+    def color(self, v):
+        return self._color[v]
+
+
+class HopcroftKarp():
+    '''
+    Finds a maximum cardinality matching in a bipartite graph in O(E * V^(1/2))
+    '''
+
+    def __init__(self, G):
+        # get colorings of bipartite graph
+        self.bipartite = Bipartite(G)
+        self.edge_to = [None for v in range(G.V)]
+        self._marked = [-1 for v in range(G.V)]
+        self.mate = [None for v in range(G.V)]
+        self.dist_to = [float('inf') for v in range(G.V)]
+        self.cardinality = 0
+
+        while self.has_augmenting_path(G):
+            adj_iterators = [iter(G.adj[v]) for v in range(G.V)]
+            for s in range(G.V):
+                if self.matched(s) or self.bipartite.color(v) < 0:
+                    continue
+                path = [s]
+                while len(path) > 0:
+                    v = path[-1]
+                    try:
+                        w = next(adj_iterators[v])
+                        if self.level_edge(v, w):
+                            continue
+                        path.append(w)
+                        if not self.matched(w):
+                            while len(path) > 0:
+                                x = path.pop()
+                                y = path.pop()
+                                self.mate[x] = y
+                                self.mate[y] = x
+                            self.cardinality += 1
+                    except StopIteration:
+                        path.pop()
+
+    def level_edge(self, v, w):
+        return self.dist_to[w] == self.dist_to[v] + 1 and self.residual_edge(v, w)
+
+    def residual_edge(self, v, w):
+        if self.mate[v] != w and self.bipartite.color(v) > 0:
+            return True
+        elif self.mate[v] == w and self.bipartite.color(w) < 0:
+            return True
+        else:
+            return False
+
+    def has_augmenting_path(self, G):
+        self._marked = [False for v in range(G.V)]
+        self.dist_to = [float('inf') for v in range(G.V)]
+        q = deque()
+
+        # * Initialize queue with all unmatched vertices of one color
+        for v in range(G.V):
+            if self.bipartite.color(v) > 0 and not self.matched(v):
+                q.append(v)
+                self._marked[v] = True
+                self.dist_to[v] = 0
+
+        found_path = False
+        # * Perform BFS to find augmenting path
+        while len(q) > 0:
+            v = q.popleft()
+            for edge in G.adj[v]:
+                w = edge.other(v)
+                if self.residual_edge(v, w) and not self._marked[w]:
+                    self.dist_to[w] = self.dist_to[v] + 1
+                    self._marked[w] = True
+                    if not self.matched(w):
+                        found_path = True
+                    if not found_path:
+                        q.append(w)
+
+    def matched(self, v):
+        return self.mate[v] >= 0
