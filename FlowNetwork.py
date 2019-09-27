@@ -1,11 +1,12 @@
 from collections import deque
+import math
 '''
 Python3 Implementation of flow network algorithms (Ford Fulkerson, etc.)
 '''
 
 
 class FlowEdge():
-    def __init__(self, v, w, capacity, flow=0):
+    def __init__(self, v, w, capacity, cost=1, flow=0):
         '''
         Parameters:
         v           Int     Index of 'from' vertex
@@ -17,6 +18,7 @@ class FlowEdge():
         self._w = w
         self._capacity = capacity
         self._flow = flow
+        self._cost = cost
 
     def __str__(self):
         return f'{self._v}->{self._w} ({self._flow}/{self._capacity})'
@@ -108,6 +110,14 @@ class FlowEdge():
             self.flow -= delta
         elif (vertex == self._w):
             self.flow += delta
+        else:
+            raise IndexError('Invalid endpoint')
+
+    def cost_to(self, vertex):
+        if vertex == self._v:
+            return -1 * self._cost
+        elif vertex == self._w:
+            return self._cost
         else:
             raise IndexError('Invalid endpoint')
 
@@ -259,7 +269,7 @@ class Dinics():
         self._t = t
         self._G = G
 
-        # assumes all edges' flow set to 0
+        #! assumes all edges' flow set to 0
 
         #   construct level graph (Gl)from residual graph of G
         while self.construct_level(G, s, t):
@@ -503,54 +513,43 @@ class PushRelabel():
         self.heights[u] = min_height + 1
 
 
-G = FlowNetwork(6)
-G.add_edge(FlowEdge(0, 1, 2))
-G.add_edge(FlowEdge(0, 2, 3))
-G.add_edge(FlowEdge(1, 3, 3))
-G.add_edge(FlowEdge(1, 4, 1))
-G.add_edge(FlowEdge(2, 3, 1))
-G.add_edge(FlowEdge(2, 4, 1))
-G.add_edge(FlowEdge(3, 5, 2))
-G.add_edge(FlowEdge(4, 5, 3))
-ff_g = FordFulkerson(G, 0, 5)
-print(ff_g)
+class MaxFlowByScaling(FordFulkerson):
+    def __init__(self, G, s, t):
+        '''
+        Finds the maximum flow in a flow network (G) by scaling the flow based on the largest capacity of an edge in G
+        '''
+        self._value = 0
+        self.edge_to = [None for v in range(G.V)]
+        self._marked = [False for v in range(G.V)]
+        self.C = float('-inf')
+        self.bottle = float('inf')
+        self._G = G
+        self._s = s
+        self._t = t
 
-G2 = FlowNetwork(6)
-G2.add_edge(FlowEdge(0, 1, 2))
-G2.add_edge(FlowEdge(0, 2, 3))
-G2.add_edge(FlowEdge(1, 3, 3))
-G2.add_edge(FlowEdge(1, 4, 1))
-G2.add_edge(FlowEdge(2, 3, 1))
-G2.add_edge(FlowEdge(2, 4, 1))
-G2.add_edge(FlowEdge(3, 5, 2))
-G2.add_edge(FlowEdge(4, 5, 3))
-d_g = Dinics(G2, 0, 5)
-print(d_g)
+        # * Set C to be the maximum capacity of any edge in G
+        for v in range(G.V):
+            for edge in G.adj[v]:
+                w = edge.other(v)
+                self.C = max(self.C, edge.residual_capacity_to(w))
 
-G3 = FlowNetwork(6)
-G3.add_edge(FlowEdge(0, 1, 16))
-G3.add_edge(FlowEdge(0, 2, 13))
-G3.add_edge(FlowEdge(1, 2, 10))
-G3.add_edge(FlowEdge(1, 3, 12))
-G3.add_edge(FlowEdge(2, 1, 4))
-G3.add_edge(FlowEdge(2, 4, 14))
-G3.add_edge(FlowEdge(3, 2, 9))
-G3.add_edge(FlowEdge(3, 5, 20))
-G3.add_edge(FlowEdge(4, 3, 7))
-G3.add_edge(FlowEdge(4, 5, 4))
-dg2 = Dinics(G3, 0, 5)
-print(dg2)
+        self.K = 2 ** math.floor(math.log(self.C))
 
-G4 = FlowNetwork(6)
-G4.add_edge(FlowEdge(0, 1, 16))
-G4.add_edge(FlowEdge(0, 2, 13))
-G4.add_edge(FlowEdge(1, 2, 10))
-G4.add_edge(FlowEdge(1, 3, 12))
-G4.add_edge(FlowEdge(2, 1, 4))
-G4.add_edge(FlowEdge(2, 4, 14))
-G4.add_edge(FlowEdge(3, 2, 9))
-G4.add_edge(FlowEdge(3, 5, 20))
-G4.add_edge(FlowEdge(4, 3, 7))
-G4.add_edge(FlowEdge(4, 5, 4))
-p_p = PushRelabel(G4, 0, 5)
-print(p_p)
+        while self.K >= 1:
+            while self.has_augmenting_path(G, s, t):
+                self.bottle = float('inf')
+
+                v = t
+                while v != s:  # compute bottleneck capacity
+                    self.bottle = min(
+                        self.bottle, self.edge_to[v].residual_capacity_to(v))
+                    v = self.edge_to[v].other(v)
+                if not self.bottle >= self.K:
+                    break
+                v = t
+                while v != s:  # augment the flow
+                    self.edge_to[v].add_resid_flow_to(v, self.bottle)
+                    v = self.edge_to[v].other(v)
+                self._value += self.bottle
+            self.K /= 2
+            print(self.K)

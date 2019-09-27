@@ -19,7 +19,7 @@ To Add
   - B*
 
 * All Pairs Shortest Paths
-  - Johnosn's Algorithm
+  - Johnson's Algorithm
 
 * Bipartite Matching
   - Hopcroft-Karp
