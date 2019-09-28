@@ -506,7 +506,7 @@ class PushRelabel():
             self.overflows[v] = self.overflow_list.insert_tail(v)
 
     def relabel(self, G, u):
-        min_height = self.heights[u]
+        min_height = float('inf')
         for edge in G.adj[u]:
             v = edge.other(u)
             if edge.residual_capacity_to(v) > 0:
