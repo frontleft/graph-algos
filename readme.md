@@ -12,17 +12,19 @@ Python3 implementations for:
 * Dinic's
 * Push-Relabel flows (FIFO queue)
 * Floyd Warshall
+* Hopcroft-Karp
+* A*
 
 To Add
 * Single Soruce Shortest Paths
-  - A*
-  - B*
+  - LPA* (?)
+  - SMA* (?)
+  - IDA* (?)
 
 * All Pairs Shortest Paths
   - Johnson's Algorithm
 
 * Bipartite Matching
-  - Hopcroft-Karp
   - Hungarian Algorithm
 
 * Non-Bipartite Matching
