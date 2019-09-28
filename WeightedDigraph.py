@@ -219,6 +219,9 @@ class BellmanFordSP():
             if self.cost % G.V == 0:
                 self._find_neg_cycle()
 
+    def distance(self, v):
+        return self.dist_to[v]
+
     def has_path_to(self, v):
         return self.dist_to[v] < float('inf')
 
@@ -517,3 +520,61 @@ class aStarSP():
             path.append(e)
             e = self._edge_to[e.from_v]
         return path
+
+
+class JohnsonSP():
+    '''
+    Finds all pairs shortest paths in a weighted directed graph (negative weight edges are permissible)
+    '''
+
+    def __init__(self, G):
+        # mutates the graph by adding a synthetic source vertex
+        self._dist_to = [[float('inf') for i in range(G.V)]
+                         for j in range(G.V)]
+        self._edge_to = [[None for i in range(G.V)] for j in range(G.V)]
+        self._s = G.V
+        self._neg_cycle = False
+        for v in range(G.V):
+            G.add_edge(DirectedEdge(self._s, v, 0))
+        # run Belman-Ford from synthetic source to get weights
+        bf = BellmanFordSP(G, self._s)
+
+        if bf.has_neg_cycle():
+            self._neg_cycle = True
+            return
+
+        # * Run dijkstra's from each vertex
+        q = MinPriorityQueue()
+        for s in range(G.V):
+            self._dist_to[s][s] = 0
+            q.insert_task(s, 0)
+            while not q.is_empty():
+                v = q.del_min()
+                for edge in G.adj[v]:
+                    w = edge.other(v)
+                    new_weight = edge.weight + bf.distance(v) - bf.distance(w)
+                    # * Triangle inequality
+                    if self._dist_to[s][w] > self._dist_to[s][v] + new_weight:
+                        self._dist_to[s][w] = self._dist_to[s][v] + new_weight
+                        self._edge_to[s][w] = v
+                        q.insert_task(w, self._dist_to[s][w])
+
+    def distance(self, v, w):
+        '''
+        Returns the shortest path distance between vertices v and w
+        '''
+        return self._dist_to[v][w]
+
+    def path(self, v, w):
+        '''
+        Returns the shortest path between v and w
+        '''
+        output = []
+        if self._edge_to[v][w] == None:
+            return None
+        t = w
+        while t != v:
+            output.append(t)
+            t = self._edge_to[v][t]
+
+        return reversed(output)
