@@ -136,8 +136,7 @@ class DijkstraSP():
 
     def __init__(self, G, s):
         self.edge_to = [None for v in range(G.V)]
-        self.dist_to = [float('inf') for v in range(G.V)]
-        self.dist_to[s] = 0
+        self.dist_to = [float('inf') if v != s else 0 for v in range(G.V)]
         self.pq = MinPriorityQueue()
 
         self.pq.insert_task(s, 0)
@@ -430,6 +429,7 @@ class KruskalsMST():
 
 
 class FloydWarshall():
+
     def __init__(self, G):
         self.dist = [[float('inf') for i in range(G.V)] for j in range(G.V)]
         self.next = [[None for i in range(G.V)] for j in range(G.V)]
@@ -461,3 +461,59 @@ class FloydWarshall():
             u = self.next[u][v]
             output.append(u)
         return output
+
+
+class aStarSP():
+    '''
+    A* Shortest paths algorithm (improvement on Dijkstra's best-first algorith by using a heuristic)
+    '''
+
+    def __init__(self, G, s, t, H):
+        '''
+        Parameters
+        G       EdgeWeighted Graph      Graph to perform the search within
+        s       Int                     Source vertex index
+        t       Int                     Goal vertex index
+        H       List<Int>               Vertexed indexed list of heuristic distances to goal
+        '''
+        self._dist_to = [float('inf') if v != s else 0 for v in range(G.V)]
+        self._f_to = [float('inf') for v in range(G.V)]
+        self._edge_to = [None for v in range(G.V)]
+        self._marked = [False for v in range(G.V)]
+        self._H = H
+        self._t = t
+        self._f_to[s] = self._H(s)
+        q = MinPriorityQueue()
+        q.insert_task(s, 0)
+
+        while not q.is_empty():
+            v = q.del_min()
+            self._marked[v] = True
+
+            if v == t:
+                break
+            for edge in G.adj[v]:
+                w = edge.other(v)
+                if self._marked[w]:
+                    continue
+                # triangle inequality
+                if self._dist_to[w] > self._dist_to[v] + edge.weight:
+                    # relax the vertex w
+                    self._dist_to[w] = self._dist_to[v] + edge.weight
+                    self._f_to[w] = self._dist_to[w] + self._H[w]
+                    self._edge_to[w] = v
+                    q.insert_task(w, self._f_to[w])
+
+    def has_path_to(self, v):
+        return self._dist_to[v] < float('inf')
+
+    def path_to_t(self):
+        v = self._t
+        if not self.has_path_to(v):
+            return None
+        path = []
+        e = self._edge_to[v]
+        while e != None:
+            path.append(e)
+            e = self._edge_to[e.from_v]
+        return path
