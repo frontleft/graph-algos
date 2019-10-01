@@ -14,6 +14,8 @@ Python3 implementations for:
 * Floyd Warshall
 * Hopcroft-Karp
 * A*
+* Johnson's Algorithm
+* Steiner's Cycle Cancelling min-cost flow
 
 To Add
 * Single Soruce Shortest Paths
@@ -21,11 +23,10 @@ To Add
   - SMA* (?)
   - IDA* (?)
 
-* All Pairs Shortest Paths
-  - Johnson's Algorithm
-
 * Bipartite Matching
   - Hungarian Algorithm
 
 * Non-Bipartite Matching
   - Edmond's Blossom 
+
+~~ *All Pairs Shortest Paths ~~
