@@ -15,7 +15,7 @@ Python3 implementations for:
 * Hopcroft-Karp
 * A*
 * Johnson's Algorithm
-* Steiner's Cycle Cancelling min-cost flow
+* Klein's Cycle Cancelling (min-cost flow)
 
 To Add
 * Single Soruce Shortest Paths
@@ -29,4 +29,5 @@ To Add
 * Non-Bipartite Matching
   - Edmond's Blossom 
 
-~~ *All Pairs Shortest Paths ~~
+* Min-Cost Flow
+  - Goldberg-Tarjan
