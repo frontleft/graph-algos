@@ -196,7 +196,7 @@ class BellmanFordSP():
         return self.cycle
 
     def _find_neg_cycle(self):
-        ''' builds a new graph of just the edges on the shortest paths, searches for cycle
+        ''' builds a new graph of just the edges on the shortest paths, searches for cyc    le
         if there is a cycle, it must be negative weight'''
         V = len(self.edge_to)
         spt = EdgeWeightedDigraph(V)
