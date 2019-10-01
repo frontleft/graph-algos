@@ -1,3 +1,4 @@
+from WeightedDigraph import BellmanFordSP, EdgeWeightedDigraph, DirectedEdge
 from collections import deque
 import math
 
@@ -181,7 +182,7 @@ class FordFulkerson():
         '''
         self._value = 0
         self._marked = [False for v in range(G.V)]
-        self.edge_to = [None for v in range(G.V)]
+        self._edge_to = [None for v in range(G.V)]
         self._G = G
         self._s = s
         self._t = t
@@ -192,13 +193,13 @@ class FordFulkerson():
 
             v = t
             while v != s:  # compute bottleneck capacity
-                bottle = min(bottle, self.edge_to[v].residual_capacity_to(v))
-                v = self.edge_to[v].other(v)
+                bottle = min(bottle, self._edge_to[v].residual_capacity_to(v))
+                v = self._edge_to[v].other(v)
 
             v = t
             while v != s:  # augment the flow
-                self.edge_to[v].add_resid_flow_to(v, bottle)
-                v = self.edge_to[v].other(v)
+                self._edge_to[v].add_resid_flow_to(v, bottle)
+                v = self._edge_to[v].other(v)
 
             self._value += bottle
 
@@ -210,6 +211,10 @@ class FordFulkerson():
                     s += str(edge) + '\n'
         s += f'Max flow value = {self._value}\n'
         return s
+
+    @property
+    def edges(self):
+        return self._edge_to
 
     def has_augmenting_path(self, G, s, t):
         '''
@@ -224,7 +229,7 @@ class FordFulkerson():
         Return:
         bool                    True if there is a augmenting path from s->t else false
         '''
-        self.edge_to = [None for v in range(G.V)]
+        self._edge_to = [None for v in range(G.V)]
         self._marked = [False for v in range(G.V)]
 
         q = deque()
@@ -236,7 +241,7 @@ class FordFulkerson():
                 w = edge.other(v)
                 # while there is a path from s->w, save the edge, mark it as known & add to the q
                 if edge.residual_capacity_to(w) > 0 and self._marked[w] == False:
-                    self.edge_to[w] = edge
+                    self._edge_to[w] = edge
                     self._marked[w] = True
                     q.append(w)
         return self._marked[t]
@@ -520,7 +525,7 @@ class MaxFlowByScaling(FordFulkerson):
         Finds the maximum flow in a flow network (G) by scaling the flow based on the largest capacity of an edge in G
         '''
         self._value = 0
-        self.edge_to = [None for v in range(G.V)]
+        self._edge_to = [None for v in range(G.V)]
         self._marked = [False for v in range(G.V)]
         self.C = float('-inf')
         self.bottle = float('inf')
@@ -543,17 +548,16 @@ class MaxFlowByScaling(FordFulkerson):
                 v = t
                 while v != s:  # compute bottleneck capacity
                     self.bottle = min(
-                        self.bottle, self.edge_to[v].residual_capacity_to(v))
-                    v = self.edge_to[v].other(v)
+                        self.bottle, self._edge_to[v].residual_capacity_to(v))
+                    v = self._edge_to[v].other(v)
                 if not self.bottle >= self.K:
                     break
                 v = t
                 while v != s:  # augment the flow
-                    self.edge_to[v].add_resid_flow_to(v, self.bottle)
-                    v = self.edge_to[v].other(v)
+                    self._edge_to[v].add_resid_flow_to(v, self.bottle)
+                    v = self._edge_to[v].other(v)
                 self._value += self.bottle
             self.K /= 2
-            print(self.K)
 
 
 class Bipartite():
@@ -665,3 +669,75 @@ class HopcroftKarp():
 
     def matched(self, v):
         return self.mate[v] >= 0
+
+
+class MinCostMaxFlow():
+    '''
+    Finds the min-cost flow within a flow network using cycle canceling / circulation (Klein, 1960s) O(E^2 * V * CU)
+    While there are negative cycles:
+    - Identify negative cycles w/ Bellman-Ford (if neg edges)
+    - Saturate negative cycle
+    '''
+
+    def __init__(self, G, s, t):
+        '''
+        Parameters
+        G       FlowNetwork         Flow network to find the min-cost max flow within
+        '''
+        self._edge_to = FordFulkerson(G, s, t).edges
+        self._q = deque()
+        self._on_q = [False for v in range(G.V)]
+        self._cost = 0
+        self._G = G
+        self._s = s
+        self._t = t
+
+        residual_graph = self._build_resid_digraph(G)
+        bf = BellmanFordSP(residual_graph, t)
+
+        while bf.has_neg_cycle():
+            # get cycle
+            neg_cycle = bf.get_neg_cycle()[::-1]
+            # augment flow w/ bottleneck capacity around cycle
+            bottleneck = float('inf')
+            edge_set = set()
+            for x in range(len(neg_cycle)-1):
+                v = neg_cycle[x]
+                w = neg_cycle[x+1]
+                for edge in G.adj[v]:
+                    if edge.other(v) == w:
+                        bottleneck = min(
+                            bottleneck, edge.residual_capacity_to(w))
+                        edge_set.add((edge, w))
+            for edge, w in edge_set:
+                edge.add_resid_flow_to(w, bottleneck)
+
+            residual_graph = self._build_resid_digraph(G)
+            bf = BellmanFordSP(residual_graph, t)
+
+    def __str__(self):
+        s = f'Max flow from {self._s} to {self._t}: \n'
+        for v in range(self._G.V):
+            for edge in self._G.adj[v]:
+                if v == edge.from_v and edge.flow > 0:
+                    s += str(edge) + '\n'
+        return s
+
+    def _calculate_flow_cost(self, G):
+        cost = 0
+        for v in range(G.V):
+            for edge in G.adj[v]:
+                w = edge.other(v)
+                if w == edge.to_v:
+                    cost += edge.flow * edge.cost_to(w)
+        return cost
+
+    def _build_resid_digraph(self, G):
+        residual_graph = EdgeWeightedDigraph(G.V)
+        for v in range(G.V):
+            for edge in G.adj[v]:
+                w = edge.other(v)
+                if edge.residual_capacity_to(w) > 0:
+                    cost_to_w = edge.cost_to(w)
+                    residual_graph.add_edge(DirectedEdge(v, w, cost_to_w))
+        return residual_graph
