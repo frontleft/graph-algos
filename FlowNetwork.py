@@ -683,6 +683,8 @@ class MinCostMaxFlow():
         '''
         Parameters
         G       FlowNetwork         Flow network to find the min-cost max flow within
+        s       Int                 Index of source vertex
+        t       Int                 Index of sink vertex
         '''
         self._edge_to = FordFulkerson(G, s, t).edges
         self._q = deque()
@@ -715,6 +717,8 @@ class MinCostMaxFlow():
             residual_graph = self._build_resid_digraph(G)
             bf = BellmanFordSP(residual_graph, t)
 
+        self._cost = self._calculate_flow_cost(G)
+
     def __str__(self):
         s = f'Max flow from {self._s} to {self._t}: \n'
         for v in range(self._G.V):
@@ -722,6 +726,10 @@ class MinCostMaxFlow():
                 if v == edge.from_v and edge.flow > 0:
                     s += str(edge) + '\n'
         return s
+
+    @property
+    def cost(self):
+        return self._cost
 
     def _calculate_flow_cost(self, G):
         cost = 0
